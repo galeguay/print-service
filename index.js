@@ -40,6 +40,7 @@ function buildItemName(it) {
     let cleanName = it.name
         .replace(/simple/i, '')
         .replace(/doble/i, '')
+        .replace(/onion/i, '')
         .replace(/\s+/g, ' ')
         .trim();
 
