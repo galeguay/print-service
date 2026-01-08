@@ -1,3 +1,14 @@
+
+/*comando de reset de estado
+printer._raw(Buffer.from([0x1B, 0x40]));
+resetea font
+
+resetea align
+
+resetea style
+
+resetea encoding */
+
 require('dotenv').config();
 
 const express = require('express');
@@ -8,6 +19,8 @@ escpos.Network = require('escpos-network');
 
 const PRINTER_IP = process.env.PRINTER_IP || '192.168.0.100';
 const PRINTER_PORT = process.env.PRINTER_PORT || 9100;
+const COL_A = 48;
+const COL_B = 64;
 
 const app = express();
 app.use(cors());
@@ -19,7 +32,7 @@ function formatCurrencyAR(value) {
     return `$${number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 }
 
-function formatLine(leftText, rightText, maxLength = 42) {
+function formatLine(leftText, rightText, maxLength = COL_A) {
     const spacesNeeded = maxLength - (leftText.length + rightText.length);
     return spacesNeeded > 0
         ? leftText + ' '.repeat(spacesNeeded) + rightText
@@ -77,7 +90,6 @@ app.post('/imprimir', (req, res) => {
 
         const device = new escpos.Network(PRINTER_IP, PRINTER_PORT);
         const printer = new escpos.Printer(device);
-
         device.open((err) => {
             if (err) {
                 console.error('Error de conexión:', err);
@@ -88,16 +100,17 @@ app.post('/imprimir', (req, res) => {
             }
 
             try {
-                printer
-                    .hardware('init')
-                    .encode('cp850')
-                    .font('a')
+                printer.hardware('init')
+                    .encode('cp858')
+                    .font('A')
+                    .size(1, 1)
                     .align('ct')
                     .style('b')
-                    .size(1, 1)
                     .text(order.deliveryHour || '')
-                    .font('b')
                     .feed(1)
+                    .font('B')
+                    .size(1, 1)
+                    .style('b')
                     .text(order.client || '');
                 if (order.printComment) {
                     printer
@@ -151,6 +164,7 @@ app.post('/imprimir', (req, res) => {
                     .align('rt')
                     .style('b')
                     .text(`TOTAL: ${order.total}`);
+
                 if (it.payments.cash > 0) {
                     printer._raw(Buffer.from([0x1D, 0x42, 0x01]));
                     printer.text('Efectivo: ' + formatCurrencyAR(it.payments.cash));
@@ -163,11 +177,11 @@ app.post('/imprimir', (req, res) => {
                     printer.text('Tarjeta: ' + formatCurrencyAR(it.payments.card));
                 }
 
-                printer
+                printer.style('normal')
                     .feed(1)
                     .align('lt')
                     .text(order.date || '')
-                    .feed(3)
+                    .feed(2)
                     .raw(Buffer.from([0x1B, 0x42, 0x03, 0x02]))
                     .cut();
 
@@ -231,6 +245,11 @@ app.get('/impresora/test-print', (req, res) => {
                 .align('ct')
                 .style('b')
                 .text('*** PRUEBA DE IMPRESORA ***')
+                .feed(1)
+                .text('------------------------------------------------')//48
+                .feed(1)
+                .font('A')
+                .text('----------------------------------------------------------------')//64
                 .feed(2)
                 .cut()
                 .close();
