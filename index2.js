@@ -1,4 +1,3 @@
-
 /*comando de reset de estado
 printer._raw(Buffer.from([0x1B, 0x40]));
 resetea font
@@ -88,6 +87,7 @@ app.post('/imprimir', (req, res) => {
             });
         }
 
+        const cantidadDeBurgers = order.items.filter(it => !it.is_extra).length;
         const device = new escpos.Network(PRINTER_IP, PRINTER_PORT);
         const printer = new escpos.Printer(device);
         device.open((err) => {
@@ -136,7 +136,6 @@ app.post('/imprimir', (req, res) => {
                     if (it.no_tomate) exclusions.push('s/tom');
                     if (it.no_lechuga) exclusions.push('s/lech');
                     if (it.no_bacon) exclusions.push('s/ba');
-                    if (it.no_sal) exclusions.push('pp s/sal');
 
                     const unitPrice = (it.total_price / it.quantity);
                     let itemName;
@@ -163,18 +162,22 @@ app.post('/imprimir', (req, res) => {
                     .text('--------------------------------')
                     .align('rt')
                     .style('b')
-                    .text(`TOTAL: ${order.total}`);
+                    .text(`TOTAL: ${formatCurrencyAR(order.total)}`)
+                    .feed(1);
 
-                if (it.payments.cash > 0) {
-                    printer._raw(Buffer.from([0x1D, 0x42, 0x01]));
-                    printer.text('Efectivo: ' + formatCurrencyAR(it.payments.cash));
-                    printer._raw(Buffer.from([0x1D, 0x42, 0x00]));
+                if (order.payments.cash > 0) {
+                    printer.raw(Buffer.from([0x1D, 0x42, 0x01]))
+                        .text('Efectivo: ' + formatCurrencyAR(order.payments.cash))
+                        .raw(Buffer.from([0x1D, 0x42, 0x00]))
+                        .feed(1);
                 }
-                if (it.payments.transfer > 0) {
-                    printer.text('Tranferencia: ' + formatCurrencyAR(it.payments.transfer));
+                if (order.payments.transfer > 0) {
+                    printer.text('Tranferencia: ' + formatCurrencyAR(order.payments.transfer))
+                        .feed(1);
                 }
-                if (it.payments.card > 0) {
-                    printer.text('Tarjeta: ' + formatCurrencyAR(it.payments.card));
+                if (order.payments.card > 0) {
+                    printer.text('Tarjeta: ' + formatCurrencyAR(order.payments.card))
+                        .feed(1);
                 }
 
                 printer.style('normal')
@@ -185,22 +188,29 @@ app.post('/imprimir', (req, res) => {
                     .raw(Buffer.from([0x1B, 0x42, 0x03, 0x02]))
                     .cut();
 
-                if (it.is_delivery) {
-                    printer
-                        .feed(3)
-                        .font('A')
-                        .size(4, 4)
-                        .style('b')
-                        .align('ct')
-                        .text(order.client)
-                        .feed(1)
-                    if (it.payments.cash > 0) {
-                        printer.text('Efectivo: ' + formatCurrencyAR(it.payments.cash));
+                if (order.isDelivery) {
+                    const cantidadDeBolsas = Math.ceil(cantidadDeBurgers / 2);
+
+                    for (let i = 0; i < cantidadDeBolsas; i++) {
+                        printer
+                            .feed(3)
+                            .font('A')
+                            .size(1, 2)
+                            .style('b')
+                            .align('ct')
+                            .text(order.client)
+                            .feed(1);
+
+                        if (order.payments.cash > 0) {
+                            printer.text('Efectivo: ' + formatCurrencyAR(order.payments.cash));
+                        }
+
+                        printer
+                            .feed(3)
+                            .cut();
                     }
-                    printer
-                        .feed(3)
-                        .cut();
                 }
+
                 printer.close();
 
                 return res.json({
