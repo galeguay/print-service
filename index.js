@@ -141,6 +141,7 @@ app.post('/imprimir', (req, res) => {
                         if (it.no_pepinos) exclusions.push('s/pep');
                         if (it.no_tomate) exclusions.push('s/tom');
                         if (it.no_lechuga) exclusions.push('s/lech');
+                        if (it.no_cebolla) exclusions.push('s/ceb');
                         if (it.no_bacon) exclusions.push('s/ba');
 
                         const unitPrice = (it.total_price / it.quantity);
