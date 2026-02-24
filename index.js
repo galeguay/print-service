@@ -92,7 +92,7 @@ app.post('/imprimir', (req, res) => {
             });
         }
 
-        const cantidadDeBurgers = order.items.filter(it => !it.is_extra).length;
+        const cantidadDeBurgers = order.items.filter(it => !it.is_extra && !it.is_drink).length;
         const device = new escpos.Network(PRINTER_IP, PRINTER_PORT);
         const printer = new escpos.Printer(device);
         device.open((err) => {
@@ -129,7 +129,7 @@ app.post('/imprimir', (req, res) => {
 
                 // ITEMS
                 order.items.forEach(it => {
-                    if(!it.is_extra){
+                    if (!it.is_extra) {
                         const mods = [];
                         if (it.extra_cheddar) mods.push('+ch');
                         if (it.extra_bacon) mods.push('+ba')
