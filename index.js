@@ -92,7 +92,11 @@ app.post('/imprimir', (req, res) => {
             });
         }
 
-        const cantidadDeBurgers = order.items.filter(it => !it.is_extra && !it.is_drink).length;
+        const cantidadDeBurgers = order.items
+            .filter(it =>
+                it.is_extra !== true &&
+                it.is_drink !== true
+            )
         const device = new escpos.Network(PRINTER_IP, PRINTER_PORT);
         const printer = new escpos.Printer(device);
         device.open((err) => {
