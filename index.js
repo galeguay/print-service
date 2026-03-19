@@ -1,13 +1,3 @@
-/*comando de reset de estado
-printer._raw(Buffer.from([0x1B, 0x40]));
-resetea font
-
-resetea align
-
-resetea style
-
-resetea encoding */
-
 require('dotenv').config();
 
 const express = require('express');
@@ -92,11 +82,14 @@ app.post('/imprimir', (req, res) => {
             });
         }
 
-        const cantidadDeBurgers = order.items
-            .filter(it =>
-                it.is_extra !== true &&
-                it.is_drink !== true
-            )
+const bebidas = order.items.filter(it => it.is_drink === true);
+
+const cantidadDeBurgers = order.items
+    .filter(it => 
+        it.is_extra !== true &&
+        it.is_drink !== true
+    )
+    .reduce((acc, it) => acc + (it.quantity || 1), 0);
         const device = new escpos.Network(PRINTER_IP, PRINTER_PORT);
         const printer = new escpos.Printer(device);
         device.open((err) => {
@@ -133,7 +126,7 @@ app.post('/imprimir', (req, res) => {
 
                 // ITEMS
                 order.items.forEach(it => {
-                    if (!it.is_extra) {
+                    if(!it.is_extra){
                         const mods = [];
                         if (it.extra_cheddar) mods.push('+ch');
                         if (it.extra_bacon) mods.push('+ba')
@@ -183,6 +176,7 @@ app.post('/imprimir', (req, res) => {
                         .raw(Buffer.from([0x1D, 0x42, 0x00]))
                         .feed(1);
                 }
+
                 if (order.payments.transfer > 0) {
                     printer.text('Tranferencia: ' + formatCurrencyAR(order.payments.transfer))
                         .feed(1);
@@ -207,14 +201,27 @@ app.post('/imprimir', (req, res) => {
                         printer
                             .feed(3)
                             .font('A')
-                            .size(1, 2)
+                            .size(1, 1)
                             .style('b')
                             .align('ct')
                             .text(order.client)
-                            .feed(1);
+                            .feed(1)
+                            .font('B')
+
+                        bebidas.forEach(b => {
+                            const texto = ` ${b.quantity || 1} x ${b.name}`;
+
+                            printer.raw(Buffer.from([0x1D, 0x42, 0x01]))
+                                .text(texto)
+                                .raw(Buffer.from([0x1D, 0x42, 0x00]))
+                                .feed(1)
+                        });
 
                         if (order.payments.cash > 0) {
-                            printer.text('Efectivo: ' + formatCurrencyAR(order.payments.cash));
+                            printer
+                            .font('A')
+                            .size(1, 1)
+                            .text('Efectivo: ' + formatCurrencyAR(order.payments.cash));
                         }
 
                         printer
