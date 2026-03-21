@@ -118,7 +118,9 @@ const cantidadDeBurgers = order.items
                     printer
                         .feed(1)
                         .align('lt')
-                        .text(`OBS: ${order.printComment}`)
+                        .raw(Buffer.from([0x1D, 0x42, 0x01]))
+                        .text(` OBS: ${order.printComment} `)
+                        .raw(Buffer.from([0x1D, 0x42, 0x00]))
                         .align('ct')
                 }
                 printer.text('--------------------------------')
@@ -201,7 +203,7 @@ const cantidadDeBurgers = order.items
                         printer
                             .feed(3)
                             .font('A')
-                            .size(1, 1)
+                            .size(1, 2)
                             .style('b')
                             .align('ct')
                             .text(order.client)
