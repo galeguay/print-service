@@ -211,7 +211,8 @@ const cantidadDeBurgers = order.items
                             .font('B')
 
                         bebidas.forEach(b => {
-                            const texto = ` ${b.quantity || 1} x ${b.name}`;
+                            const nombreB = b.name ?? b.nombre ?? '';
+                            const texto = ` ${b.quantity || 1} x ${nombreB}`;
 
                             printer.raw(Buffer.from([0x1D, 0x42, 0x01]))
                                 .text(texto)
@@ -319,5 +320,5 @@ app.get('/impresora/test', (req, res) => {
 
 
 app.listen(3000, () => {
-    console.log('Servidor de Dimas Burgers escuchando en http://localhost:3000');
+    console.log('Servidor de comandera conectado, no cierre esta ventana');
 });
