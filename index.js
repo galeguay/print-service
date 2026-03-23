@@ -1,15 +1,10 @@
-require('dotenv').config();
-
 const express = require('express');
 const cors = require('cors');
 
 const escpos = require('escpos');
 escpos.Network = require('escpos-network');
 
-const PRINTER_IP = process.env.PRINTER_IP || '192.168.1.100';
-const PRINTER_PORT = process.env.PRINTER_PORT || 9100;
-const COL_A = 48;
-const COL_B = 64;
+const config = require('./config.json');
 
 const app = express();
 app.use(cors());
@@ -21,7 +16,7 @@ function formatCurrencyAR(value) {
     return `$${number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 }
 
-function formatLine(leftText, rightText, maxLength = COL_A) {
+function formatLine(leftText, rightText, maxLength = config.COL_A) {
     const spacesNeeded = maxLength - (leftText.length + rightText.length);
     return spacesNeeded > 0
         ? leftText + ' '.repeat(spacesNeeded) + rightText
@@ -82,15 +77,16 @@ app.post('/imprimir', (req, res) => {
             });
         }
 
-const bebidas = order.items.filter(it => it.is_drink === true);
+        const bebidas = order.items.filter(it => it.is_drink === true);
 
-const cantidadDeBurgers = order.items
-    .filter(it => 
-        it.is_extra !== true &&
-        it.is_drink !== true
-    )
-    .reduce((acc, it) => acc + (it.quantity || 1), 0);
-        const device = new escpos.Network(PRINTER_IP, PRINTER_PORT);
+        const cantidadDeBurgers = order.items
+            .filter(it => 
+                it.is_extra !== true &&
+                it.is_drink !== true
+            )
+            .reduce((acc, it) => acc + (it.quantity || 1), 0);
+        
+        const device = new escpos.Network(config.PRINTER_IP, config.PRINTER_PORT);
         const printer = new escpos.Printer(device);
         device.open((err) => {
             if (err) {
@@ -259,7 +255,7 @@ const cantidadDeBurgers = order.items
 });
 
 app.get('/impresora/test-print', (req, res) => {
-    const device = new escpos.Network(PRINTER_IP, PRINTER_PORT);
+    const device = new escpos.Network(config.PRINTER_IP, config.PRINTER_PORT);
     const printer = new escpos.Printer(device);
 
     device.open((err) => {
@@ -299,8 +295,9 @@ app.get('/impresora/test-print', (req, res) => {
         }
     });
 });
+
 app.get('/impresora/test', (req, res) => {
-    const device = new escpos.Network(PRINTER_IP, PRINTER_PORT);
+    const device = new escpos.Network(config.PRINTER_IP, config.PRINTER_PORT);
 
     device.open((err) => {
         if (err) {
