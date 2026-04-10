@@ -36,14 +36,23 @@ function buildItemName(it) {
         baseMedallones += 2;
     }
 
-    let cleanName = nombre
-        .replace(/simple/i, '')
-        .replace(/doble/i, '')
+    let finalName = nombre;
+
+    // Reemplazar "simple" o "doble" por el número romano
+    if (/simple/i.test(finalName) || /doble/i.test(finalName)) {
+        finalName = finalName.replace(/simple|doble/i, toRoman(baseMedallones));
+    } else {
+        // Si no tenía simple/doble, lo agregamos al final
+        finalName += ` ${toRoman(baseMedallones)}`;
+    }
+
+    // Limpieza opcional
+    finalName = finalName
         .replace(/onion/i, '')
         .replace(/\s+/g, ' ')
         .trim();
 
-    return `${cleanName} ${toRoman(baseMedallones)}`.trim();
+    return finalName;
 }
 
 function toRoman(num) {
@@ -127,17 +136,20 @@ app.post('/imprimir', (req, res) => {
                     if(!it.is_extra){
                         const mods = [];
                         if (it.extra_cheddar) mods.push('+ch');
+                        if (it.extra_provolone) mods.push('+pro');
                         if (it.extra_bacon) mods.push('+ba')
                         if (it.bbq) mods.push('+bbq');
 
                         const exclusions = [];
                         if (it.no_salsa) exclusions.push('s/s');
+                        if (it.no_mayo) exclusions.push('s/mayo');
                         if (it.no_cheddar) exclusions.push('s/ch');
                         if (it.no_pepinos) exclusions.push('s/pep');
                         if (it.no_tomate) exclusions.push('s/tom');
                         if (it.no_lechuga) exclusions.push('s/lech');
                         if (it.no_cebolla) exclusions.push('s/ceb');
                         if (it.no_bacon) exclusions.push('s/ba');
+                        if (it.no_provolone) exclusions.push('s/pro');
 
                         const unitPrice = (it.total_price / it.quantity);
                         let itemName;
