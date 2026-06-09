@@ -4,7 +4,7 @@ const cors = require('cors');
 const escpos = require('escpos');
 escpos.Network = require('escpos-network');
 
-const config = require('./config.json');
+const config = require('./configComandera.json');
 
 const app = express();
 app.use(cors());
