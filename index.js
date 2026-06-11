@@ -113,6 +113,8 @@ app.post('/imprimir', (req, res) => {
                     .size(1, 1)
                     .align('ct')
                     .style('b')
+                    .feed(6)
+                    .text('------------------------')
                     .text(order.deliveryHour || '')
                     .feed(1)
                     .font('B')
