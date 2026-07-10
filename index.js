@@ -15,8 +15,8 @@ let config;
 try {
     const rawConfig = fs.readFileSync(configPath, 'utf8');
     config = JSON.parse(rawConfig);
-    console.log('✅ Configuración cargada correctamente desde:', configPath);
-    console.log(`🖨️  Impresora apuntando a IP: ${config.PRINTER_IP} | Puerto: ${config.PRINTER_PORT}`);
+    console.log('- Configuración cargada correctamente desde:', configPath);
+    console.log(`- Impresora apuntando a IP: ${config.PRINTER_IP} | Puerto: ${config.PRINTER_PORT}`);
 } catch (error) {
     console.error(`❌ Error crítico: No se encontró o no se pudo leer el archivo de configuración en: ${configPath}`);
     console.error('Asegúrate de que configComandera.json esté en la misma carpeta que el ejecutable.');
@@ -160,16 +160,9 @@ app.post('/imprimir', (req, res) => {
                         if (it.extra_bacon) mods.push('+ba')
                         if (it.bbq) mods.push('+bbq');
 
-                        const exclusions = [];
-                        if (it.no_salsa) exclusions.push('s/s');
-                        if (it.no_mayo) exclusions.push('s/mayo');
-                        if (it.no_cheddar) exclusions.push('s/ch');
-                        if (it.no_pepinos) exclusions.push('s/pep');
-                        if (it.no_tomate) exclusions.push('s/tom');
-                        if (it.no_lechuga) exclusions.push('s/lech');
-                        if (it.no_cebolla) exclusions.push('s/ceb');
-                        if (it.no_bacon) exclusions.push('s/ba');
-                        if (it.no_provolone) exclusions.push('s/pro');
+                        const exclusions = Object.entries(config.EXCLUSIONS || {})
+                            .filter(([field]) => Boolean(it[field]))
+                            .map(([, label]) => label);
 
                         const unitPrice = (it.total_price / it.quantity);
                         let itemName;
@@ -349,5 +342,5 @@ app.get('/impresora/test', (req, res) => {
 
 
 app.listen(3000, () => {
-    console.log('Servidor de comandera conectado, no cierre esta ventana');
+    console.log('Servidor de comandera conectado, NO CIERRE ESTA VENTANA');
 });
