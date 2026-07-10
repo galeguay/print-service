@@ -1,10 +1,28 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 const escpos = require('escpos');
 escpos.Network = require('escpos-network');
 
-const config = require('./configComandera.json');
+// --- LECTURA DINÁMICA DEL CONFIG ---
+// process.pkg determina si el código corre compilado (.exe) o con 'node index.js'
+const baseDir = process.pkg ? path.dirname(process.execPath) : process.cwd();
+const configPath = path.join(baseDir, 'configComandera.json');
+
+let config;
+try {
+    const rawConfig = fs.readFileSync(configPath, 'utf8');
+    config = JSON.parse(rawConfig);
+    console.log('✅ Configuración cargada correctamente desde:', configPath);
+    console.log(`🖨️  Impresora apuntando a IP: ${config.PRINTER_IP} | Puerto: ${config.PRINTER_PORT}`);
+} catch (error) {
+    console.error(`❌ Error crítico: No se encontró o no se pudo leer el archivo de configuración en: ${configPath}`);
+    console.error('Asegúrate de que configComandera.json esté en la misma carpeta que el ejecutable.');
+    process.exit(1); // Detiene la ejecución si no hay configuración
+}
+// ------------------------------------
 
 const app = express();
 app.use(cors());
