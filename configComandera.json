@@ -1,4 +1,16 @@
 {
-    "PRINTER_IP": "192.168.0.100",
-    "PRINTER_PORT": 9100
+    "PRINTER_IP": "192.168.0.21",
+    "PRINTER_PORT": 9100,
+    "EXCLUSIONS": {
+        "no_salsa": "s/s",
+        "no_mayo": "s/mayo",
+        "no_cheddar": "s/ch",
+        "no_pepinos": "s/pep",
+        "no_tomate": "s/tom",
+        "no_lechuga": "s/lech",
+        "no_cebolla": "s/ceb",
+        "no_bacon": "s/ba",
+        "no_provolone": "s/pro",
+        "no_nueces": "s/nue"
+    }
 }
