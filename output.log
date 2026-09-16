@@ -1,0 +1,4 @@
+nohup: no se tendrá en cuenta la entrada
+- Configuración cargada correctamente desde: /home/ale/Laboratorio/print-service/configComandera.json
+- Impresora apuntando a IP: 192.168.0.21 | Puerto: 9100
+Servidor de comandera conectado en puerto 3000, NO CIERRE ESTA VENTANA

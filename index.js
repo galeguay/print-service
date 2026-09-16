@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
 
 const escpos = require('escpos');
 escpos.Network = require('escpos-network');
@@ -107,12 +108,12 @@ app.post('/imprimir', (req, res) => {
         const bebidas = order.items.filter(it => it.is_drink === true);
 
         const cantidadDeBurgers = order.items
-            .filter(it => 
+            .filter(it =>
                 it.is_extra !== true &&
                 it.is_drink !== true
             )
             .reduce((acc, it) => acc + (it.quantity || 1), 0);
-        
+
         const device = new escpos.Network(config.PRINTER_IP, config.PRINTER_PORT);
         const printer = new escpos.Printer(device);
         device.open((err) => {
@@ -153,7 +154,7 @@ app.post('/imprimir', (req, res) => {
 
                 // ITEMS
                 order.items.forEach(it => {
-                    if(!it.is_extra){
+                    if (!it.is_extra) {
                         const mods = [];
                         if (it.extra_cheddar) mods.push('+ch');
                         if (it.extra_provolone) mods.push('+pro');
@@ -243,9 +244,9 @@ app.post('/imprimir', (req, res) => {
 
                         if (order.payments.cash > 0) {
                             printer
-                            .font('A')
-                            .size(1, 1)
-                            .text('Efectivo: ' + formatCurrencyAR(order.payments.cash));
+                                .font('A')
+                                .size(1, 1)
+                                .text('Efectivo: ' + formatCurrencyAR(order.payments.cash));
                         }
 
                         printer
@@ -341,6 +342,7 @@ app.get('/impresora/test', (req, res) => {
 });
 
 
-app.listen(3000, () => {
-    console.log('Servidor de comandera conectado, NO CIERRE ESTA VENTANA');
+const server = http.createServer(app);
+server.listen(3000, () => {
+    console.log('Servidor de comandera conectado en puerto 3000, NO CIERRE ESTA VENTANA');
 });
