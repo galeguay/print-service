@@ -11,6 +11,7 @@
         "no_cebolla": "s/ceb",
         "no_bacon": "s/ba",
         "no_provolone": "s/pro",
-        "no_nueces": "s/nue"
+        "no_nueces": "s/nue",
+        "is_veggie": "VEGGIE"
     }
 }
