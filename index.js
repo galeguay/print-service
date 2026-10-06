@@ -1,3 +1,6 @@
+// Silencia el aviso DEP0040 (punycode) que viene de una dependencia
+process.noDeprecation = true;
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -23,6 +26,8 @@ try {
     console.error('Asegúrate de que configComandera.json esté en la misma carpeta que el ejecutable.');
     process.exit(1); // Detiene la ejecución si no hay configuración
 }
+// Extras por defecto si el JSON no trae la sección EXTRAS (configs viejos)
+config.EXTRAS = config.EXTRAS || { extra_dip_mi: '+dip mil islas' };
 // ------------------------------------
 
 const app = express();
@@ -160,11 +165,16 @@ app.post('/imprimir', (req, res) => {
                         if (it.extra_provolone) mods.push('+pro');
                         if (it.extra_bacon) mods.push('+ba')
                         if (it.bbq) mods.push('+bbq');
+                        Object.entries(config.EXTRAS)
+                            .filter(([field]) => Boolean(it[field]))
+                            .forEach(([, label]) => mods.push(label));
 
                         const exclusions = Object.entries(config.EXCLUSIONS || {})
-                            .filter(([field]) => Boolean(it[field]))
+                            .filter(([field]) => field !== 'is_veggie' && Boolean(it[field]))
                             .map(([, label]) => label);
 
+                        // VEGGIE siempre va primero en la línea de modificadores
+                        const veggie = it.is_veggie ? [config.EXCLUSIONS?.is_veggie ?? 'VEGGIE'] : [];
                         const unitPrice = (it.total_price / it.quantity);
                         let itemName;
 
@@ -177,9 +187,9 @@ app.post('/imprimir', (req, res) => {
 
                         for (let i = 0; i < it.quantity; i++) {
                             printer.text(itemName);
-                            if (mods.length > 0 || exclusions.length > 0) {
+                            if (veggie.length > 0 || mods.length > 0 || exclusions.length > 0) {
                                 printer.text(
-                                    `  ${mods.join(' ')} ${exclusions.join(' ')}`
+                                    `  ${[...veggie, ...mods, ...exclusions].join(' ')}`
                                 );
                             }
                         }

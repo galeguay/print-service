@@ -1,6 +1,9 @@
 {
     "PRINTER_IP": "192.168.0.21",
     "PRINTER_PORT": 9100,
+    "EXTRAS": {
+        "extra_dip_mi": "+dip mil islas"
+    },
     "EXCLUSIONS": {
         "no_salsa": "s/s",
         "no_mayo": "s/mayo",
