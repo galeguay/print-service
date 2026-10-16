@@ -10,6 +10,22 @@ const http = require('http');
 const escpos = require('escpos');
 escpos.Network = require('escpos-network');
 
+// Muestra el error y deja la ventana abierta (si no, el .exe se cierra solo y no se alcanza a leer)
+function exitWithPause(code = 1) {
+    console.error('\nPresione una tecla para cerrar...');
+    if (process.stdin.isTTY) {
+        process.stdin.setRawMode(true);
+        process.stdin.resume();
+        process.stdin.once('data', () => process.exit(code));
+    } else {
+        setTimeout(() => process.exit(code), 60000);
+    }
+}
+process.on('uncaughtException', (err) => {
+    console.error('❌ Error inesperado:', err.stack || err);
+    exitWithPause(1);
+});
+
 // --- LECTURA DINÁMICA DEL CONFIG ---
 // process.pkg determina si el código corre compilado (.exe) o con 'node index.js'
 const baseDir = process.pkg ? path.dirname(process.execPath) : process.cwd();
@@ -24,7 +40,8 @@ try {
 } catch (error) {
     console.error(`❌ Error crítico: No se encontró o no se pudo leer el archivo de configuración en: ${configPath}`);
     console.error('Asegúrate de que configComandera.json esté en la misma carpeta que el ejecutable.');
-    process.exit(1); // Detiene la ejecución si no hay configuración
+    console.error('Detalle:', error.message);
+    exitWithPause(1); // Detiene la ejecución si no hay configuración
 }
 // Valores por defecto si el JSON no trae las secciones (configs viejos)
 config.EXTRAS = config.EXTRAS || {
@@ -357,6 +374,14 @@ app.get('/impresora/test', (req, res) => {
 
 
 const server = http.createServer(app);
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error('❌ El puerto 3000 ya está en uso. Probablemente ya hay otra Comandera abierta (cerrala desde el Administrador de tareas).');
+    } else {
+        console.error('❌ Error del servidor:', err.message);
+    }
+    exitWithPause(1);
+});
 server.listen(3000, () => {
     console.log('Servidor de comandera conectado en puerto 3000, NO CIERRE ESTA VENTANA');
 });
