@@ -26,8 +26,18 @@ try {
     console.error('Asegúrate de que configComandera.json esté en la misma carpeta que el ejecutable.');
     process.exit(1); // Detiene la ejecución si no hay configuración
 }
-// Extras por defecto si el JSON no trae la sección EXTRAS (configs viejos)
-config.EXTRAS = config.EXTRAS || { extra_dip_mi: '+dip mil islas' };
+// Valores por defecto si el JSON no trae las secciones (configs viejos)
+config.EXTRAS = config.EXTRAS || {
+    extra_cheddar: '+ch',
+    extra_provolone: '+pro',
+    extra_bacon: '+ba',
+    bbq: '+bbq',
+    extra_dip_mi: '+dip mil islas'
+};
+// Extras que suman medallones (campo -> cantidad)
+config.EXTRAS_MEDALLONES = config.EXTRAS_MEDALLONES || { extra_medallon: 1, extra_2medallones: 2 };
+// Extras que se agregan al nombre del producto (campo -> texto)
+config.EXTRAS_NOMBRE = config.EXTRAS_NOMBRE || { extra_papas: ' + EXTRA PAPAS' };
 // ------------------------------------
 
 const app = express();
@@ -52,13 +62,9 @@ function buildItemName(it) {
 
     let baseMedallones = /doble/i.test(nombre) ? 2 : 1;
 
-    if (it.extra_medallon) {
-        baseMedallones += 1;
-    }
-
-    if (it.extra_2medallones) {
-        baseMedallones += 2;
-    }
+    Object.entries(config.EXTRAS_MEDALLONES).forEach(([field, cantidad]) => {
+        if (it[field]) baseMedallones += cantidad;
+    });
 
     let finalName = nombre;
 
@@ -161,10 +167,6 @@ app.post('/imprimir', (req, res) => {
                 order.items.forEach(it => {
                     if (!it.is_extra) {
                         const mods = [];
-                        if (it.extra_cheddar) mods.push('+ch');
-                        if (it.extra_provolone) mods.push('+pro');
-                        if (it.extra_bacon) mods.push('+ba')
-                        if (it.bbq) mods.push('+bbq');
                         Object.entries(config.EXTRAS)
                             .filter(([field]) => Boolean(it[field]))
                             .forEach(([, label]) => mods.push(label));
@@ -180,7 +182,9 @@ app.post('/imprimir', (req, res) => {
 
                         if (it.recipe_id) {
                             itemName = buildItemName(it);
-                            if (it.extra_papas) itemName += ' + EXTRA PAPAS';
+                            Object.entries(config.EXTRAS_NOMBRE)
+                                .filter(([field]) => Boolean(it[field]))
+                                .forEach(([, label]) => { itemName += label; });
                         } else {
                             itemName = it.name ?? it.nombre ?? '';
                         }

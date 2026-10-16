@@ -2,11 +2,23 @@
     "PRINTER_IP": "192.168.0.21",
     "PRINTER_PORT": 9100,
     "EXTRAS": {
+        "extra_cheddar": "+ch",
+        "extra_provolone": "+pro",
+        "extra_bacon": "+ba",
+        "bbq": "+bbq",
         "extra_dip_mi": "+dip mil islas"
+    },
+    "EXTRAS_MEDALLONES": {
+        "extra_medallon": 1,
+        "extra_2medallones": 2
+    },
+    "EXTRAS_NOMBRE": {
+        "extra_papas": " + EXTRA PAPAS"
     },
     "EXCLUSIONS": {
         "no_salsa": "s/s",
-        "no_mayo": "s/mayo",
+        "no_bbq": "s/s",
+        "no_mayo": "s/s",
         "no_cheddar": "s/ch",
         "no_pepinos": "s/pep",
         "no_tomate": "s/tom",
@@ -15,6 +27,7 @@
         "no_bacon": "s/ba",
         "no_provolone": "s/pro",
         "no_nueces": "s/nue",
+        "no_roque": "s/roq",
         "is_veggie": "VEGGIE"
     }
 }
