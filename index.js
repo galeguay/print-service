@@ -1,10 +1,30 @@
+// Silencia el aviso DEP0040 (punycode) que viene de una dependencia
+process.noDeprecation = true;
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
 
 const escpos = require('escpos');
 escpos.Network = require('escpos-network');
+
+// Muestra el error y deja la ventana abierta (si no, el .exe se cierra solo y no se alcanza a leer)
+function exitWithPause(code = 1) {
+    console.error('\nPresione una tecla para cerrar...');
+    if (process.stdin.isTTY) {
+        process.stdin.setRawMode(true);
+        process.stdin.resume();
+        process.stdin.once('data', () => process.exit(code));
+    } else {
+        setTimeout(() => process.exit(code), 60000);
+    }
+}
+process.on('uncaughtException', (err) => {
+    console.error('❌ Error inesperado:', err.stack || err);
+    exitWithPause(1);
+});
 
 // --- LECTURA DINÁMICA DEL CONFIG ---
 // process.pkg determina si el código corre compilado (.exe) o con 'node index.js'
@@ -20,8 +40,21 @@ try {
 } catch (error) {
     console.error(`❌ Error crítico: No se encontró o no se pudo leer el archivo de configuración en: ${configPath}`);
     console.error('Asegúrate de que configComandera.json esté en la misma carpeta que el ejecutable.');
-    process.exit(1); // Detiene la ejecución si no hay configuración
+    console.error('Detalle:', error.message);
+    exitWithPause(1); // Detiene la ejecución si no hay configuración
 }
+// Valores por defecto si el JSON no trae las secciones (configs viejos)
+config.EXTRAS = config.EXTRAS || {
+    extra_cheddar: '+ch',
+    extra_provolone: '+pro',
+    extra_bacon: '+ba',
+    bbq: '+bbq',
+    extra_dip_mi: '+dip mil islas'
+};
+// Extras que suman medallones (campo -> cantidad)
+config.EXTRAS_MEDALLONES = config.EXTRAS_MEDALLONES || { extra_medallon: 1, extra_2medallones: 2 };
+// Extras que se agregan al nombre del producto (campo -> texto)
+config.EXTRAS_NOMBRE = config.EXTRAS_NOMBRE || { extra_papas: ' + EXTRA PAPAS' };
 // ------------------------------------
 
 const app = express();
@@ -46,13 +79,9 @@ function buildItemName(it) {
 
     let baseMedallones = /doble/i.test(nombre) ? 2 : 1;
 
-    if (it.extra_medallon) {
-        baseMedallones += 1;
-    }
-
-    if (it.extra_2medallones) {
-        baseMedallones += 2;
-    }
+    Object.entries(config.EXTRAS_MEDALLONES).forEach(([field, cantidad]) => {
+        if (it[field]) baseMedallones += cantidad;
+    });
 
     let finalName = nombre;
 
@@ -107,12 +136,12 @@ app.post('/imprimir', (req, res) => {
         const bebidas = order.items.filter(it => it.is_drink === true);
 
         const cantidadDeBurgers = order.items
-            .filter(it => 
+            .filter(it =>
                 it.is_extra !== true &&
                 it.is_drink !== true
             )
             .reduce((acc, it) => acc + (it.quantity || 1), 0);
-        
+
         const device = new escpos.Network(config.PRINTER_IP, config.PRINTER_PORT);
         const printer = new escpos.Printer(device);
         device.open((err) => {
@@ -153,32 +182,35 @@ app.post('/imprimir', (req, res) => {
 
                 // ITEMS
                 order.items.forEach(it => {
-                    if(!it.is_extra){
+                    if (!it.is_extra) {
                         const mods = [];
-                        if (it.extra_cheddar) mods.push('+ch');
-                        if (it.extra_provolone) mods.push('+pro');
-                        if (it.extra_bacon) mods.push('+ba')
-                        if (it.bbq) mods.push('+bbq');
+                        Object.entries(config.EXTRAS)
+                            .filter(([field]) => Boolean(it[field]))
+                            .forEach(([, label]) => mods.push(label));
 
                         const exclusions = Object.entries(config.EXCLUSIONS || {})
-                            .filter(([field]) => Boolean(it[field]))
+                            .filter(([field]) => field !== 'is_veggie' && Boolean(it[field]))
                             .map(([, label]) => label);
 
+                        // VEGGIE siempre va primero en la línea de modificadores
+                        const veggie = it.is_veggie ? [config.EXCLUSIONS?.is_veggie ?? 'VEGGIE'] : [];
                         const unitPrice = (it.total_price / it.quantity);
                         let itemName;
 
                         if (it.recipe_id) {
                             itemName = buildItemName(it);
-                            if (it.extra_papas) itemName += ' + EXTRA PAPAS';
+                            Object.entries(config.EXTRAS_NOMBRE)
+                                .filter(([field]) => Boolean(it[field]))
+                                .forEach(([, label]) => { itemName += label; });
                         } else {
                             itemName = it.name ?? it.nombre ?? '';
                         }
 
                         for (let i = 0; i < it.quantity; i++) {
                             printer.text(itemName);
-                            if (mods.length > 0 || exclusions.length > 0) {
+                            if (veggie.length > 0 || mods.length > 0 || exclusions.length > 0) {
                                 printer.text(
-                                    `  ${mods.join(' ')} ${exclusions.join(' ')}`
+                                    `  ${[...veggie, ...mods, ...exclusions].join(' ')}`
                                 );
                             }
                         }
@@ -243,9 +275,9 @@ app.post('/imprimir', (req, res) => {
 
                         if (order.payments.cash > 0) {
                             printer
-                            .font('A')
-                            .size(1, 1)
-                            .text('Efectivo: ' + formatCurrencyAR(order.payments.cash));
+                                .font('A')
+                                .size(1, 1)
+                                .text('Efectivo: ' + formatCurrencyAR(order.payments.cash));
                         }
 
                         printer
@@ -341,6 +373,15 @@ app.get('/impresora/test', (req, res) => {
 });
 
 
-app.listen(3000, () => {
-    console.log('Servidor de comandera conectado, NO CIERRE ESTA VENTANA');
+const server = http.createServer(app);
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error('❌ El puerto 3000 ya está en uso. Probablemente ya hay otra Comandera abierta (cerrala desde el Administrador de tareas).');
+    } else {
+        console.error('❌ Error del servidor:', err.message);
+    }
+    exitWithPause(1);
+});
+server.listen(3000, () => {
+    console.log('Servidor de comandera conectado en puerto 3000, NO CIERRE ESTA VENTANA');
 });
